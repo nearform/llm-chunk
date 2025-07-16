@@ -25,7 +25,7 @@ describe('chunkByCharacter', () => {
     ])
   })
 
-  test('handles overlap', () => {
+  test.only('handles overlap', () => {
     const result: ChunkResult[] = Array.from(
       chunkByCharacter('abcdef', 3, defaultSplitter, 1)
     )

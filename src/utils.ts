@@ -149,7 +149,97 @@ export function getTrimmedBounds(text: string): ChunkUnit | null {
  * // Returns chunks with max 2 tokens each, ~5 character overlap
  * ```
  */
-export function chunkByCharacter(
+export function chunkByCharacterLinear(
+  currentText: string,
+  chunkSize: number,
+  splitter: (text: string) => string[],
+  chunkOverlap: number,
+  startOffset: number = 0
+): ChunkResult[] {
+  // Get parts and match to indices for length calculation.
+  const parts = splitter(currentText);
+  const partsIdxsToText = [];
+  for (let textIdx = 0, partsIdx = 0; textIdx < currentText.length; textIdx++) {
+    if (partsIdx >= parts.length) {
+      // If we have matched all parts, break out of the loop.
+      break;
+    }
+
+    const part = parts[partsIdx];
+
+    // Must have a first character match, else skip to next part.
+    if (currentText[textIdx] !== part[0])
+      continue;
+
+    // Found an index match.
+    if (currentText.slice(textIdx, textIdx + part.length) === part) {
+      partsIdxsToText.push(textIdx);
+      partsIdx++;
+    }
+  }
+  console.log("TODO HERE PARTS", parts);
+  console.log("TODO HERE PARTS IDX", partsIdxsToText);
+
+  // Check that all parts were matched.
+  if (partsIdxsToText.length !== parts.length) {
+    throw new Error(
+      `Mismatch between parts and matched indices: ${parts.length} parts, ` +
+      `${partsIdxsToText.length} matched indices`
+    );
+  }
+
+
+  // Iterate through the split parts to create chunks
+  let chunkStart: number = 0
+  let chunkEnd: number = 1
+  const chunks: ChunkResult[] = []
+  let prevChunk: ChunkResult | null = null;
+  for (let i = 0; i < partsIdxsToText.length; i++) {
+    const textIdx = partsIdxsToText[i];
+    const partLength = parts[i].length;
+    const potentialChunkEnd = textIdx + partLength + 1;
+
+    // TODO: HANDLE part larger than chunkSize.
+    if (partLength > chunkSize) {
+      throw new Error(`Part length ${partLength} is larger than chunk size ${chunkSize}: ${parts[i]}`);
+    }
+
+    // TODO: Check `-1` off by one here.
+    if (potentialChunkEnd - 1 - chunkStart < chunkSize) {
+      // We can fit the part in the chunk.
+      chunkEnd = potentialChunkEnd;
+    } else {
+      // Overlap.
+      let overlapStart: number = chunkStart;
+      if (prevChunk !== null) {
+        overlapStart = prevChunk.end - chunkOverlap;
+        console.log("TODO HERE OVERLAP", {
+          overlapStart,
+          prevChunkEnd: prevChunk.end,
+          chunkOverlap
+        });
+      }
+
+      // Over the end. Add the chunk and start a new one.
+      const chunk = {
+        text: currentText.slice(overlapStart, chunkEnd),
+        start: overlapStart,
+        end: chunkEnd
+      };
+      chunks.push(chunk);
+      console.log("TODO HERE CHUNK", chunk, { overlapStart, chunkEnd });
+
+      // Restart the chunk.
+      prevChunk = chunk;
+      chunkStart = chunkEnd;
+    }
+  }
+
+
+  return chunks
+}
+
+export function chunkByCharacterBinarySearch(
   currentText: string,
   chunkSize: number,
   splitter: (text: string) => string[],
@@ -189,6 +279,9 @@ export function chunkByCharacter(
   }
   return chunks
 }
+
+// TODO: REMOVE
+export const chunkByCharacter = chunkByCharacterLinear;
 
 /**
  * Chunks text by paragraphs using a greedy sliding window approach with position-accurate overlap.

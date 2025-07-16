@@ -155,41 +155,90 @@ export function mapPartsToText(
 
   return result
 }
+export function chunkByCharacterLinear2(
+  currentText: string,
+  chunkSize: number,
+  splitter: (text: string) => string[],
+  chunkOverlap: number,
+  startOffset: number = 0
+): ChunkResult[] {
+  // Helpers
+  const addChunk = ({
+    text,
+    start,
+    end
+  }: {
+    text: string
+    start: number
+    end: number
+  }) => {
+    chunks.push({
+      text,
+      start: startOffset + start,
+      end: startOffset + end
+    })
+  }
 
-/**
- * Chunks text using a sliding window approach with token-based size calculation.
- *
- * Employs binary search to find optimal chunk boundaries that respect token limits while
- * maximizing chunk size. The algorithm ensures forward progress by guaranteeing at least
- * one character per chunk even when individual characters exceed token limits. Provides
- * character-level overlap between consecutive chunks for context preservation.
- *
- * **Algorithm Details:**
- * - Binary search optimization: Efficiently finds maximum text length within token constraints
- * - Forward progress guarantee: Prevents infinite loops by ensuring minimum advancement
- * - Character-level overlap: Provides approximate overlap (not position-accurate for retrieval)
- * - Absolute position tracking: Maintains original character positions with configurable offset
- *
- * **Use Cases:**
- * - Raw text processing where paragraph structure is unavailable or unimportant
- * - Character-level chunking for maximum text utilization within token limits
- * - Fallback chunking when semantic boundaries cannot be determined
- *
- * @param currentText - The text segment to chunk into smaller pieces
- * @param chunkSize - Maximum number of tokens allowed per chunk
- * @param splitter - Tokenization function that splits text into countable units
- * @param chunkOverlap - Number of characters to overlap between consecutive chunks (approximate)
- * @param startOffset - Starting character position offset for calculating absolute positions
- * @returns Array of chunk objects containing text content and absolute character positions
- *
- * @example
- * ```typescript
- * const splitter = (text: string) => text.split(/\s+/);
- * const chunks = chunkByCharacter("Hello world example text", 2, splitter, 5, 0);
- * // Returns chunks with max 2 tokens each, ~5 character overlap
- * ```
- */
-export function chunkByCharacterLinear(
+  // Iterate.
+  const parts = splitter(currentText)
+  const partsIdxsToText = mapPartsToText(parts, currentText)
+  const chunks: ChunkResult[] = []
+
+  let chunkStart = 0
+  let chunkEnd = 1
+
+  for (let i = 0; i < partsIdxsToText.length; i++) {
+    const part = partsIdxsToText[i]
+
+    // Ignored part from splitter.
+    if (part.text === null) {
+      continue
+    }
+
+    // See if we can fit the part in the chunk.
+    const potentialChunkSize = part.end - 1 - chunkStart
+    // console.log("TODO HERE ITERATE", {
+    //   part,
+    //   potentialChunkEnd,
+    //   potentialChunkSize,
+    //   chunkStart,
+    //   chunkEnd,
+    // }
+    if (potentialChunkSize < chunkSize) {
+      chunkEnd = part.end
+    } else {
+      // We can't fit the part in the chunk.
+      // Add the chunk and start a new one.
+      const chunk = {
+        text: currentText.slice(chunkStart, chunkEnd),
+        start: chunkStart,
+        end: chunkEnd
+      }
+      addChunk(chunk)
+
+      // console.log("TODO HERE EMIT CHUNK", {
+      //   chunk
+      // })
+
+      // Restart the chunk.
+      chunkStart = chunkEnd
+      chunkEnd = chunkEnd + 1
+    }
+  }
+
+  // Add the last chunk.
+  if (chunkStart < currentText.length) {
+    addChunk({
+      text: currentText.slice(chunkStart, chunkEnd),
+      start: chunkStart,
+      end: chunkEnd
+    })
+  }
+
+  return chunks
+}
+
+export function chunkByCharacterLinear1(
   currentText: string,
   chunkSize: number,
   splitter: (text: string) => string[],
@@ -386,7 +435,41 @@ export function chunkByCharacterBinarySearch(
 }
 
 // TODO: REMOVE
-export const chunkByCharacter = chunkByCharacterLinear
+// TODO: UPDATE COMMENT
+/**
+ * Chunks text using a sliding window approach with token-based size calculation.
+ *
+ * Employs binary search to find optimal chunk boundaries that respect token limits while
+ * maximizing chunk size. The algorithm ensures forward progress by guaranteeing at least
+ * one character per chunk even when individual characters exceed token limits. Provides
+ * character-level overlap between consecutive chunks for context preservation.
+ *
+ * **Algorithm Details:**
+ * - Binary search optimization: Efficiently finds maximum text length within token constraints
+ * - Forward progress guarantee: Prevents infinite loops by ensuring minimum advancement
+ * - Character-level overlap: Provides approximate overlap (not position-accurate for retrieval)
+ * - Absolute position tracking: Maintains original character positions with configurable offset
+ *
+ * **Use Cases:**
+ * - Raw text processing where paragraph structure is unavailable or unimportant
+ * - Character-level chunking for maximum text utilization within token limits
+ * - Fallback chunking when semantic boundaries cannot be determined
+ *
+ * @param currentText - The text segment to chunk into smaller pieces
+ * @param chunkSize - Maximum number of tokens allowed per chunk
+ * @param splitter - Tokenization function that splits text into countable units
+ * @param chunkOverlap - Number of characters to overlap between consecutive chunks (approximate)
+ * @param startOffset - Starting character position offset for calculating absolute positions
+ * @returns Array of chunk objects containing text content and absolute character positions
+ *
+ * @example
+ * ```typescript
+ * const splitter = (text: string) => text.split(/\s+/);
+ * const chunks = chunkByCharacter("Hello world example text", 2, splitter, 5, 0);
+ * // Returns chunks with max 2 tokens each, ~5 character overlap
+ * ```
+ */
+export const chunkByCharacter = chunkByCharacterLinear2
 
 /**
  * Chunks text by paragraphs using a greedy sliding window approach with position-accurate overlap.

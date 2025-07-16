@@ -59,7 +59,7 @@ describe.only('split', () => {
     assert.strictEqual(result[1].end, 600)
   })
 
-  test.only('should split with overlap (sliding window)', () => {
+  test('should split with overlap (sliding window)', () => {
     const input: string = 'abcdefghij'
 
     console.log(

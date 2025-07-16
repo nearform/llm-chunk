@@ -192,49 +192,65 @@ export function chunkByCharacterLinear(
   // Iterate through the split parts to create chunks
   let chunkStart: number = 0
   let chunkEnd: number = 1
+  let chunkStartIdxs: number[] = [];
+
   const chunks: ChunkResult[] = []
-  let prevChunk: ChunkResult | null = null;
   for (let i = 0; i < partsIdxsToText.length; i++) {
     const textIdx = partsIdxsToText[i];
     const partLength = parts[i].length;
-    const potentialChunkEnd = textIdx + partLength + 1;
+    const potentialChunkEnd = textIdx + partLength;
 
-    // TODO: HANDLE part larger than chunkSize.
-    if (partLength > chunkSize) {
-      throw new Error(`Part length ${partLength} is larger than chunk size ${chunkSize}: ${parts[i]}`);
-    }
-
-    // TODO: Check `-1` off by one here.
     if (potentialChunkEnd - 1 - chunkStart < chunkSize) {
       // We can fit the part in the chunk.
       chunkEnd = potentialChunkEnd;
-    } else {
-      // Overlap.
-      let overlapStart: number = chunkStart;
-      if (prevChunk !== null) {
-        overlapStart = prevChunk.end - chunkOverlap;
-        console.log("TODO HERE OVERLAP", {
-          overlapStart,
-          prevChunkEnd: prevChunk.end,
-          chunkOverlap
-        });
-      }
 
-      // Over the end. Add the chunk and start a new one.
+      // Keep track of overlap for _next_ chunk.
+      chunkStartIdxs.push(textIdx);
+
+      console.log("TODO HERE ITERATE CHUNK", {
+        textIdx,
+        partLength,
+        potentialChunkEnd,
+        chunkStart,
+        chunkEnd,
+        chunkStartIdxs,
+      });
+    } else {
+      // We can't fit the part in the chunk.
+      // Add the chunk and start a new one.
       const chunk = {
-        text: currentText.slice(overlapStart, chunkEnd),
-        start: overlapStart,
+        text: currentText.slice(chunkStart, chunkEnd),
+        start: chunkStart,
         end: chunkEnd
       };
       chunks.push(chunk);
-      console.log("TODO HERE CHUNK", chunk, { overlapStart, chunkEnd });
+      console.log("TODO HERE EMIT CHUNK", chunk);
 
       // Restart the chunk.
-      prevChunk = chunk;
-      chunkStart = chunkEnd;
+      if (chunkOverlap > 0 && chunkStartIdxs.length > 0) {
+        // Adjust for overlap, if applicable.
+        chunkStartIdxs = chunkStartIdxs.slice(-chunkOverlap);
+        chunkStart = chunkStartIdxs[0];
+        console.log("TODO HERE OVERLAP", {
+          chunkStartIdxs,
+          chunkStart,
+          chunkOverlap
+        });
+      } else {
+        chunkStart = chunkEnd;
+        chunkStartIdxs = [];
+      }
+
+      chunkEnd = chunkStart + 1;
     }
   }
 
+  console.log("TODO HERE FINAL CHUNKS", chunks, {
+    chunkStart,
+    chunkEnd,
+    chunkStartIdxs,
+    partsIdxsToText
+  });
 
   return chunks
 }

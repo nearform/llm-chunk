@@ -13,7 +13,7 @@ import type { ChunkResult, ChunkUnit } from '../src/types.js'
 const defaultSplitter: (text: string) => string[] = (text: string) =>
   text.split('')
 
-describe('chunkByCharacter', () => {
+describe.only('chunkByCharacter', () => {
   test('yields correct chunks for basic input', () => {
     const result: ChunkResult[] = Array.from(
       chunkByCharacter('abcdef', 2, defaultSplitter, 0)

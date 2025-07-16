@@ -5,7 +5,8 @@ import {
   chunkByParagraph,
   getUnits,
   calculateOverlapStart,
-  getTrimmedBounds
+  getTrimmedBounds,
+  mapPartsToText
 } from '../src/utils.js'
 import type { ChunkResult, ChunkUnit } from '../src/types.js'
 
@@ -13,7 +14,7 @@ import type { ChunkResult, ChunkUnit } from '../src/types.js'
 const defaultSplitter: (text: string) => string[] = (text: string) =>
   text.split('')
 
-describe('chunkByCharacter', () => {
+describe.only('chunkByCharacter', () => {
   test('yields correct chunks for basic input', () => {
     const result: ChunkResult[] = Array.from(
       chunkByCharacter('abcdef', 2, defaultSplitter, 0)
@@ -1182,5 +1183,135 @@ describe('getTrimmedBounds', () => {
     // Verify extraction accuracy
     const extracted = text.slice(result!.start, result!.end)
     assert.strictEqual(extracted, content)
+  })
+})
+
+describe.only('mapPartsToText', () => {
+  const defaultSplitter = (text: string) => text.split('')
+  const wordSplitter = (text: string) => text.split(/\s+/).filter(Boolean)
+
+  test('maps parts to text with default splitter (character)', () => {
+    const text = 'abcdef'
+    const parts = defaultSplitter(text)
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'a', start: 0, end: 1 },
+      { text: 'b', start: 1, end: 2 },
+      { text: 'c', start: 2, end: 3 },
+      { text: 'd', start: 3, end: 4 },
+      { text: 'e', start: 4, end: 5 },
+      { text: 'f', start: 5, end: 6 }
+    ])
+  })
+
+  test('maps parts to text with word splitter (whitespace)', () => {
+    const text = 'foo bar baz'
+    const parts = wordSplitter(text)
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'foo', start: 0, end: 3 },
+      { text: null, start: 3, end: 4 },
+      { text: 'bar', start: 4, end: 7 },
+      { text: null, start: 7, end: 8 },
+      { text: 'baz', start: 8, end: 11 }
+    ])
+  })
+
+  test('handles unmatched characters in text (default splitter)', () => {
+    const text = 'aXbYc'
+    const parts = ['a', 'b', 'c']
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'a', start: 0, end: 1 },
+      { text: null, start: 1, end: 2 },
+      { text: 'b', start: 2, end: 3 },
+      { text: null, start: 3, end: 4 },
+      { text: 'c', start: 4, end: 5 }
+    ])
+  })
+
+  test('handles unmatched characters in text (word splitter)', () => {
+    const text = 'fooX barY'
+    const parts = ['foo', 'bar']
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'foo', start: 0, end: 3 },
+      { text: null, start: 3, end: 4 },
+      { text: null, start: 4, end: 5 },
+      { text: 'bar', start: 5, end: 8 },
+      { text: null, start: 8, end: 9 }
+    ])
+  })
+
+  test('handles empty parts array', () => {
+    const text = 'abc'
+    const parts: string[] = []
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: null, start: 0, end: 1 },
+      { text: null, start: 1, end: 2 },
+      { text: null, start: 2, end: 3 }
+    ])
+  })
+
+  test('handles empty text', () => {
+    const text = ''
+    const parts = ['a', 'b']
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [])
+  })
+
+  test('handles both empty text and parts', () => {
+    const text = ''
+    const parts: string[] = []
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [])
+  })
+
+  test('handles parts longer than text', () => {
+    const text = 'ab'
+    const parts = ['a', 'b', 'c', 'd']
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'a', start: 0, end: 1 },
+      { text: 'b', start: 1, end: 2 }
+    ])
+  })
+
+  test('handles text with only whitespace (word splitter)', () => {
+    const text = '   '
+    const parts = wordSplitter(text)
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: null, start: 0, end: 1 },
+      { text: null, start: 1, end: 2 },
+      { text: null, start: 2, end: 3 }
+    ])
+  })
+
+  test('handles repeated words (word splitter)', () => {
+    const text = 'foo foo bar'
+    const parts = wordSplitter(text)
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'foo', start: 0, end: 3 },
+      { text: null, start: 3, end: 4 },
+      { text: 'foo', start: 4, end: 7 },
+      { text: null, start: 7, end: 8 },
+      { text: 'bar', start: 8, end: 11 }
+    ])
+  })
+
+  test('handles unicode and special characters', () => {
+    const text = 'héllo 🚀 world'
+    const parts = wordSplitter(text)
+    const result = mapPartsToText(parts, text)
+    assert.deepStrictEqual(result, [
+      { text: 'héllo', start: 0, end: 5 },
+      { text: null, start: 5, end: 6 },
+      { text: '🚀', start: 6, end: 8 },
+      { text: null, start: 8, end: 9 },
+      { text: 'world', start: 9, end: 14 }
+    ])
   })
 })

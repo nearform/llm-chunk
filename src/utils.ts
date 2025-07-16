@@ -116,6 +116,46 @@ export function getTrimmedBounds(text: string): ChunkUnit | null {
   }
 }
 
+export function mapPartsToText(
+  parts: string[],
+  text: string
+): Array<{ text: string | null; start: number; end: number }> {
+  const result: Array<{ text: string | null; start: number; end: number }> = []
+
+  let partIdx = 0
+  let i = 0
+  while (i < text.length && partIdx < parts.length) {
+    const part = parts[partIdx]
+    if (text.startsWith(part, i)) {
+      result.push({
+        text: part,
+        start: i,
+        end: i + part.length
+      })
+      i += part.length
+      partIdx++
+    } else {
+      result.push({
+        text: null,
+        start: i,
+        end: i + 1
+      })
+      i += 1
+    }
+  }
+  // If there are leftover unmatched characters in text, mark them as text: null
+  while (i < text.length) {
+    result.push({
+      text: null,
+      start: i,
+      end: i + 1
+    })
+    i += 1
+  }
+
+  return result
+}
+
 /**
  * Chunks text using a sliding window approach with token-based size calculation.
  *
@@ -194,10 +234,45 @@ export function chunkByCharacterLinear(
   let chunkStartIdxs: number[] = []
 
   const chunks: ChunkResult[] = []
+  const addChunk = ({
+    text,
+    start,
+    end
+  }: {
+    text: string
+    start: number
+    end: number
+  }) => {
+    chunks.push({
+      text,
+      start: startOffset + start,
+      end: startOffset + end
+    })
+  }
+
   for (let i = 0; i < partsIdxsToText.length; i++) {
     const textIdx = partsIdxsToText[i]
     const partLength = parts[i].length
     const potentialChunkEnd = textIdx + partLength
+    const potentialChunkSize = potentialChunkEnd - 1 - chunkStart
+
+    // console.log("TODO LOOP", {
+    //  i,
+    //  textIdx,
+    //  partsPortion: parts[i],
+    //  potentialChunkEnd,
+    //  potentialChunkSize,
+    //  chunkStart,
+    //  chunkEnd,
+    //  chunkSizeCurrent: chunkEnd - 1 - chunkStart,
+    // })
+
+    // console.log("TODO HERE Before Iterate CHUNK", {
+    //   chunkSizeCheck: potentialChunkEnd - 1 - chunkStart,
+    //   textIdx,
+    //   partLength,
+    //   potentialChunkEnd,
+    // });
 
     if (potentialChunkEnd - 1 - chunkStart < chunkSize) {
       // We can fit the part in the chunk.
@@ -222,12 +297,18 @@ export function chunkByCharacterLinear(
         start: chunkStart,
         end: chunkEnd
       }
-      chunks.push(chunk)
+      addChunk(chunk)
       // console.log("TODO HERE EMIT CHUNK", chunk);
+
+      // TODO: HERE -- NOT RECALCULATING FOR OVERLAP
 
       // Restart the chunk.
       if (chunkOverlap > 0 && chunkStartIdxs.length > 0) {
         // Adjust for overlap, if applicable.
+        // console.log("TODO OVERLAP START", {
+        //   chunkStartIdxs,
+        //   chunkStart
+        // });
         chunkStartIdxs = chunkStartIdxs.slice(-chunkOverlap)
         chunkStart = chunkStartIdxs[0]
         // console.log("TODO HERE OVERLAP", {
@@ -253,7 +334,7 @@ export function chunkByCharacterLinear(
 
   // Add the last chunk.
   if (chunkStart < currentText.length) {
-    chunks.push({
+    addChunk({
       text: currentText.slice(chunkStart, chunkEnd),
       start: chunkStart,
       end: chunkEnd

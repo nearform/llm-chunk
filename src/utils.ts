@@ -157,64 +157,63 @@ export function chunkByCharacterLinear(
   startOffset: number = 0
 ): ChunkResult[] {
   // Get parts and match to indices for length calculation.
-  const parts = splitter(currentText);
-  const partsIdxsToText = [];
+  const parts = splitter(currentText)
+  const partsIdxsToText = []
   for (let textIdx = 0, partsIdx = 0; textIdx < currentText.length; textIdx++) {
     if (partsIdx >= parts.length) {
       // If we have matched all parts, break out of the loop.
-      break;
+      break
     }
 
-    const part = parts[partsIdx];
+    const part = parts[partsIdx]
 
     // Must have a first character match, else skip to next part.
-    if (currentText[textIdx] !== part[0])
-      continue;
+    if (currentText[textIdx] !== part[0]) continue
 
     // Found an index match.
     if (currentText.slice(textIdx, textIdx + part.length) === part) {
-      partsIdxsToText.push(textIdx);
-      partsIdx++;
+      partsIdxsToText.push(textIdx)
+      partsIdx++
     }
   }
-  console.log("TODO HERE PARTS", parts);
-  console.log("TODO HERE PARTS IDX", partsIdxsToText);
+  // console.log("TODO HERE PARTS", parts);
+  // console.log("TODO HERE PARTS IDX", partsIdxsToText);
 
   // Check that all parts were matched.
+  // TODO: NEED THIS??? DIFFERENT CHECK???
   if (partsIdxsToText.length !== parts.length) {
     throw new Error(
       `Mismatch between parts and matched indices: ${parts.length} parts, ` +
-      `${partsIdxsToText.length} matched indices`
-    );
+        `${partsIdxsToText.length} matched indices`
+    )
   }
-
 
   // Iterate through the split parts to create chunks
   let chunkStart: number = 0
   let chunkEnd: number = 1
-  let chunkStartIdxs: number[] = [];
+  let chunkStartIdxs: number[] = []
 
   const chunks: ChunkResult[] = []
   for (let i = 0; i < partsIdxsToText.length; i++) {
-    const textIdx = partsIdxsToText[i];
-    const partLength = parts[i].length;
-    const potentialChunkEnd = textIdx + partLength;
+    const textIdx = partsIdxsToText[i]
+    const partLength = parts[i].length
+    const potentialChunkEnd = textIdx + partLength
 
     if (potentialChunkEnd - 1 - chunkStart < chunkSize) {
       // We can fit the part in the chunk.
-      chunkEnd = potentialChunkEnd;
+      chunkEnd = potentialChunkEnd
 
       // Keep track of overlap for _next_ chunk.
-      chunkStartIdxs.push(textIdx);
+      chunkStartIdxs.push(textIdx)
 
-      console.log("TODO HERE ITERATE CHUNK", {
-        textIdx,
-        partLength,
-        potentialChunkEnd,
-        chunkStart,
-        chunkEnd,
-        chunkStartIdxs,
-      });
+      // console.log("TODO HERE ITERATE CHUNK", {
+      //   textIdx,
+      //   partLength,
+      //   potentialChunkEnd,
+      //   chunkStart,
+      //   chunkEnd,
+      //   chunkStartIdxs,
+      // });
     } else {
       // We can't fit the part in the chunk.
       // Add the chunk and start a new one.
@@ -222,35 +221,44 @@ export function chunkByCharacterLinear(
         text: currentText.slice(chunkStart, chunkEnd),
         start: chunkStart,
         end: chunkEnd
-      };
-      chunks.push(chunk);
-      console.log("TODO HERE EMIT CHUNK", chunk);
+      }
+      chunks.push(chunk)
+      // console.log("TODO HERE EMIT CHUNK", chunk);
 
       // Restart the chunk.
       if (chunkOverlap > 0 && chunkStartIdxs.length > 0) {
         // Adjust for overlap, if applicable.
-        chunkStartIdxs = chunkStartIdxs.slice(-chunkOverlap);
-        chunkStart = chunkStartIdxs[0];
-        console.log("TODO HERE OVERLAP", {
-          chunkStartIdxs,
-          chunkStart,
-          chunkOverlap
-        });
+        chunkStartIdxs = chunkStartIdxs.slice(-chunkOverlap)
+        chunkStart = chunkStartIdxs[0]
+        // console.log("TODO HERE OVERLAP", {
+        //   chunkStartIdxs,
+        //   chunkStart,
+        //   chunkOverlap
+        // });
       } else {
-        chunkStart = chunkEnd;
-        chunkStartIdxs = [];
+        chunkStart = chunkEnd
+        chunkStartIdxs = []
       }
 
-      chunkEnd = chunkStart + 1;
+      chunkEnd = potentialChunkEnd
     }
   }
 
-  console.log("TODO HERE FINAL CHUNKS", chunks, {
-    chunkStart,
-    chunkEnd,
-    chunkStartIdxs,
-    partsIdxsToText
-  });
+  // console.log("TODO HERE FINAL CHUNKS", chunks, {
+  //   chunkStart,
+  //   chunkEnd,
+  //   chunkStartIdxs,
+  //   partsIdxsToText
+  // });
+
+  // Add the last chunk.
+  if (chunkStart < currentText.length) {
+    chunks.push({
+      text: currentText.slice(chunkStart, chunkEnd),
+      start: chunkStart,
+      end: chunkEnd
+    })
+  }
 
   return chunks
 }
@@ -297,7 +305,7 @@ export function chunkByCharacterBinarySearch(
 }
 
 // TODO: REMOVE
-export const chunkByCharacter = chunkByCharacterLinear;
+export const chunkByCharacter = chunkByCharacterLinear
 
 /**
  * Chunks text by paragraphs using a greedy sliding window approach with position-accurate overlap.

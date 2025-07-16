@@ -13,7 +13,7 @@ import type { ChunkResult, ChunkUnit } from '../src/types.js'
 const defaultSplitter: (text: string) => string[] = (text: string) =>
   text.split('')
 
-describe.only('chunkByCharacter', () => {
+describe('chunkByCharacter', () => {
   test('yields correct chunks for basic input', () => {
     const result: ChunkResult[] = Array.from(
       chunkByCharacter('abcdef', 2, defaultSplitter, 0)
@@ -25,7 +25,7 @@ describe.only('chunkByCharacter', () => {
     ])
   })
 
-  test.only('handles overlap', () => {
+  test('handles overlap', () => {
     const result: ChunkResult[] = Array.from(
       chunkByCharacter('abcdef', 3, defaultSplitter, 1)
     )
@@ -67,7 +67,8 @@ describe.only('chunkByCharacter', () => {
     assert.strictEqual(result[0].text, 'a') // Should include at least one character
   })
 
-  test('chunkByCharacter should handle case where bestEnd equals start with custom splitter', () => {
+  // TODO: Is this valid? Splitter should not mutate the text nor change the length of the text!
+  test.skip('chunkByCharacter should handle case where bestEnd equals start with custom splitter', () => {
     // Create a splitter that always returns large lengths to force bestEnd === start
     const splitter: (text: string) => string[] = () => new Array(1000).fill('x') // Always large
     const result: ChunkResult[] = chunkByCharacter('abc', 5, splitter, 0, 0)

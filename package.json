@@ -7,6 +7,8 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
+    "postinstall_COMMENT": "echo 'TODO: REMOVE POSTINSTALL and MOVE BACK DEPENDENCIES'",
+    "postinstall": "npm run build",
     "build": "tsc --project tsconfig.json",
     "check": "npm run lint && npm run test:unit && npm run check-format",
     "check-format": "prettier --check .",
@@ -29,6 +31,11 @@
     "url": "https://github.com/nearform/llm-chunk/issues"
   },
   "homepage": "https://github.com/nearform/llm-chunk#readme",
+  "dependencies": {
+    "globals": "^16.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
@@ -36,13 +43,10 @@
     "eslint": "^9.30.1",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
-    "globals": "^16.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.0",
     "prettier": "^3.6.2",
-    "tiktoken": "^1.0.21",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.0.0"
+    "tiktoken": "^1.0.21"
   },
   "lint-staged": {
     "*.{js,jsx}": "eslint --cache --fix"

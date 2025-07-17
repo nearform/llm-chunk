@@ -34,6 +34,7 @@
   "dependencies": {
     "globals": "^16.3.0",
     "ts-node": "^10.9.2",
+    "tiktoken": "^1.0.21",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
@@ -45,8 +46,7 @@
     "eslint-plugin-prettier": "^5.5.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.0",
-    "prettier": "^3.6.2",
-    "tiktoken": "^1.0.21"
+    "prettier": "^3.6.2"
   },
   "lint-staged": {
     "*.{js,jsx}": "eslint --cache --fix"

@@ -1504,7 +1504,10 @@ describe('split and getChunk relationship matrix tests', () => {
       retrievedText,
       `Chunk text should match getChunk result when chunk size > input size`
     )
-    assert.ok(chunk.start >= 0, 'Single chunk should start at a valid position (may be adjusted due to trimming)')
+    assert.ok(
+      chunk.start >= 0,
+      'Single chunk should start at a valid position (may be adjusted due to trimming)'
+    )
     assert.ok(
       chunk.end <= blogPost.length,
       'Single chunk should end at or before input length (may be adjusted due to trimming)'
@@ -1723,7 +1726,7 @@ describe('split and getChunk relationship matrix tests', () => {
     // Validate each character chunk with expected positions and content
     characterChunks.forEach((chunk, index) => {
       const expected = expectedCharacterChunks[index]
-      
+
       // Verify start and end positions
       assert.strictEqual(
         chunk.start,
@@ -1735,14 +1738,14 @@ describe('split and getChunk relationship matrix tests', () => {
         expected.end,
         `Character chunk ${index} should end at position ${expected.end}, got ${chunk.end}`
       )
-      
+
       // Verify chunk text matches expected
       assert.strictEqual(
         chunk.text,
         expected.text,
         `Character chunk ${index} text should be "${expected.text}", got "${chunk.text}"`
       )
-      
+
       // Verify getChunk returns the same text
       const retrievedText = getChunk(input, chunk.start, chunk.end)
       assert.strictEqual(
@@ -1750,7 +1753,7 @@ describe('split and getChunk relationship matrix tests', () => {
         retrievedText,
         `Character chunk ${index} should match getChunk result for range ${chunk.start}-${chunk.end}`
       )
-      
+
       // Verify tokens match expected
       const actualTokens = wordSplitter(chunk.text as string)
       assert.deepStrictEqual(
@@ -1869,7 +1872,7 @@ describe('split and getChunk relationship matrix tests', () => {
     // Validate each paragraph chunk with expected positions and content
     paragraphChunks.forEach((chunk, index) => {
       const expected = expectedParagraphChunks[index]
-      
+
       // Verify start and end positions
       assert.strictEqual(
         chunk.start,
@@ -1881,14 +1884,14 @@ describe('split and getChunk relationship matrix tests', () => {
         expected.end,
         `Paragraph chunk ${index} should end at position ${expected.end}, got ${chunk.end}`
       )
-      
+
       // Verify chunk text matches expected
       assert.strictEqual(
         chunk.text,
         expected.text,
         `Paragraph chunk ${index} text should be "${expected.text}", got "${chunk.text}"`
       )
-      
+
       // Verify getChunk returns the same text
       const retrievedText = getChunk(input, chunk.start, chunk.end)
       assert.strictEqual(
@@ -1896,7 +1899,7 @@ describe('split and getChunk relationship matrix tests', () => {
         retrievedText,
         `Paragraph chunk ${index} should match getChunk result for range ${chunk.start}-${chunk.end}`
       )
-      
+
       // Verify tokens match expected
       const actualTokens = wordSplitter(chunk.text as string)
       assert.deepStrictEqual(
@@ -1904,7 +1907,7 @@ describe('split and getChunk relationship matrix tests', () => {
         expected.tokens,
         `Paragraph chunk ${index} should have tokens ${JSON.stringify(expected.tokens)}, got ${JSON.stringify(actualTokens)}`
       )
-      
+
       // For paragraph chunks, verify exact overlap precision
       if (index > 0) {
         const prevChunk = paragraphChunks[index - 1]
@@ -1912,7 +1915,7 @@ describe('split and getChunk relationship matrix tests', () => {
         const overlapEnd = prevChunk.end
         const overlapText = input.slice(overlapStart, overlapEnd)
         const overlapTokens = wordSplitter(overlapText)
-        
+
         assert.strictEqual(
           overlapTokens.length,
           chunkOverlap,

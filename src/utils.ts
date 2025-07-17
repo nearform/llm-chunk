@@ -163,6 +163,7 @@ export function chunkByCharacterLinear2(
   startOffset: number = 0
 ): ChunkResult[] {
   // Helpers
+  const chunks: ChunkResult[] = []
   const addChunk = ({
     text,
     start,
@@ -179,14 +180,14 @@ export function chunkByCharacterLinear2(
     })
   }
 
-  // Iterate.
+  // Do a prep single pass to split, map, and prepare for a single iteration pass.
   const parts = splitter(currentText)
   const partsIdxsToText = mapPartsToText(parts, currentText)
-  const chunks: ChunkResult[] = []
 
+  // Iterate.
   let chunkStart = 0
   let chunkEnd = 1
-
+  let chunkParts: { text: string | null; start: number; end: number }[] = []
   for (let i = 0; i < partsIdxsToText.length; i++) {
     const part = partsIdxsToText[i]
 
@@ -206,7 +207,12 @@ export function chunkByCharacterLinear2(
     // }
     if (potentialChunkSize < chunkSize) {
       chunkEnd = part.end
+
+      // Track non-ignored parts (for later overlap handling).
+      chunkParts.push(part)
     } else {
+      // TODO: HANDLE SPLITTING THE PART WHEN OVER THE CHUNK SIZE.
+
       // We can't fit the part in the chunk.
       // Add the chunk and start a new one.
       const chunk = {
@@ -216,13 +222,21 @@ export function chunkByCharacterLinear2(
       }
       addChunk(chunk)
 
-      // console.log("TODO HERE EMIT CHUNK", {
-      //   chunk
-      // })
+      // Handle the overlap by potentially resetting the start to earlier.
+      if (chunkOverlap > 0) {
+        const overlapParts = chunkParts.slice(-chunkOverlap)
+        if (overlapParts.length > 0) {
+          chunkStart = overlapParts[0].start
+          chunkParts = overlapParts
+        }
+      } else {
+        // Restart the chunk.
+        chunkStart = part.start
+        chunkParts = []
+      }
 
-      // Restart the chunk.
-      chunkStart = chunkEnd
-      chunkEnd = chunkEnd + 1
+      chunkParts.push(part)
+      chunkEnd = part.end
     }
   }
 

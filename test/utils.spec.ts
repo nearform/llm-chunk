@@ -14,7 +14,7 @@ import type { ChunkResult, ChunkUnit } from '../src/types.js'
 const defaultSplitter: (text: string) => string[] = (text: string) =>
   text.split('')
 
-describe.only('chunkByCharacter', () => {
+describe('chunkByCharacter', () => {
   test('yields correct chunks for basic input', () => {
     const result: ChunkResult[] = Array.from(
       chunkByCharacter('abcdef', 2, defaultSplitter, 0)
@@ -1186,7 +1186,7 @@ describe('getTrimmedBounds', () => {
   })
 })
 
-describe.only('mapPartsToText', () => {
+describe('mapPartsToText', () => {
   const defaultSplitter = (text: string) => text.split('')
   const wordSplitter = (text: string) => text.split(/\s+/).filter(Boolean)
 

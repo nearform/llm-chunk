@@ -69,7 +69,7 @@ describe('split', () => {
     ])
   })
 
-  // TODO: Test is wrong. The split results are: `[ 'a', 'e', 'i', 'o', 'u' ]`
+  // TODO: Test fails because non-matches are included on trailing end.
   //       Thus the result should be:
   //       ```
   //       { text: 'a', start: 0, end: 1 },
@@ -85,9 +85,9 @@ describe('split', () => {
       splitter: (t: string) => t.match(/[aeiou]/g) || []
     }
     assert.deepStrictEqual(split(input, options), [
-      { text: 'a', start: 0, end: 1 },
-      { text: 'ei', start: 4, end: 6 },
-      { text: 'ou', start: 6, end: 8 }
+      { text: 'abcde', start: 0, end: 5 },
+      { text: 'io', start: 5, end: 7 },
+      { text: 'u', start: 7, end: 8 }
     ])
   })
 

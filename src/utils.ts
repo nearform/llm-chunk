@@ -191,14 +191,21 @@ export function chunkByCharacterLinear(
   for (let i = 0; i < partsIdxsToText.length; i++) {
     const part = partsIdxsToText[i]
 
+    // console.log("TODO: REMOVE", {
+    //   part,
+    //   chunkStart,
+    //   chunkEnd,
+    //   chunkSize,
+    //   chunkOverlap
+    // })
+
     // Ignored part from splitter.
     if (part.text === null) {
       continue
     }
 
     // See if we can fit the part in the chunk.
-    const potentialChunkSize = part.end - 1 - chunkStart
-    if (potentialChunkSize < chunkSize) {
+    if (chunkParts.length < chunkSize) {
       chunkEnd = part.end
 
       // Track non-ignored parts (for later overlap handling).

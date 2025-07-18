@@ -201,6 +201,7 @@ export function chunkByCharacterLinear(
 ): ChunkResult[] {
   // Helpers
   const chunks: ChunkResult[] = []
+  let lastChunkEnd = null
   const addChunk = ({
     text,
     start,
@@ -215,6 +216,9 @@ export function chunkByCharacterLinear(
       start: startOffset + start,
       end: startOffset + end
     })
+
+    // Update last chunk end for overlap calculations
+    lastChunkEnd = end
   }
 
   // Do a prep single pass to split, map, and prepare for a single iteration pass.
@@ -278,7 +282,10 @@ export function chunkByCharacterLinear(
   }
 
   // Add the last chunk.
-  if (chunkStart < currentText.length) {
+  if (
+    chunkStart < currentText.length &&
+    (lastChunkEnd === null || lastChunkEnd < chunkEnd)
+  ) {
     addChunk({
       text: currentText.slice(chunkStart, chunkEnd),
       start: chunkStart,

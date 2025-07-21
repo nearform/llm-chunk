@@ -150,7 +150,153 @@ export function getTrimmedBounds(text: string): ChunkUnit | null {
  * // Returns chunks with max 2 tokens each, 1 token overlap
  * ```
  */
-export function chunkByCharacter(
+export const chunkByCharacter = chunkByCharacterLinear
+
+export function mapPartsToText(
+  parts: string[],
+  text: string
+): Array<{ text: string | null; start: number; end: number }> {
+  const result: Array<{ text: string | null; start: number; end: number }> = []
+
+  let partIdx = 0
+  let i = 0
+  while (i < text.length && partIdx < parts.length) {
+    const part = parts[partIdx]
+    if (text.startsWith(part, i)) {
+      result.push({
+        text: part,
+        start: i,
+        end: i + part.length
+      })
+      i += part.length
+      partIdx++
+    } else {
+      result.push({
+        text: null,
+        start: i,
+        end: i + 1
+      })
+      i += 1
+    }
+  }
+  // If there are leftover unmatched characters in text, mark them as text: null
+  while (i < text.length) {
+    result.push({
+      text: null,
+      start: i,
+      end: i + 1
+    })
+    i += 1
+  }
+
+  return result
+}
+
+export function chunkByCharacterLinear(
+  currentText: string,
+  chunkSize: number,
+  splitter: (text: string) => string[],
+  chunkOverlap: number,
+  startOffset: number = 0
+): ChunkResult[] {
+  // Helpers
+  const chunks: ChunkResult[] = []
+  let lastChunkEnd = null
+  const addChunk = ({
+    text,
+    start,
+    end
+  }: {
+    text: string
+    start: number
+    end: number
+  }) => {
+    chunks.push({
+      text,
+      start: startOffset + start,
+      end: startOffset + end
+    })
+
+    // Update last chunk end for overlap calculations
+    lastChunkEnd = end
+  }
+
+  // Do a prep single pass to split, map, and prepare for a single iteration pass.
+  const parts = splitter(currentText)
+  const partsIdxsToText = mapPartsToText(parts, currentText)
+
+  // Iterate.
+  let chunkStart = 0
+  let chunkEnd = 1
+  let chunkParts: { text: string | null; start: number; end: number }[] = []
+  for (let i = 0; i < partsIdxsToText.length; i++) {
+    const part = partsIdxsToText[i]
+
+    // console.log("TODO: REMOVE", {
+    //   part,
+    //   chunkStart,
+    //   chunkEnd,
+    //   chunkSize,
+    //   chunkOverlap
+    // })
+
+    // Ignored part from splitter.
+    if (part.text === null) {
+      continue
+    }
+
+    // See if we can fit the part in the chunk.
+    if (chunkParts.length < chunkSize) {
+      chunkEnd = part.end
+
+      // Track non-ignored parts (for later overlap handling).
+      chunkParts.push(part)
+    } else {
+      // TODO: HANDLE SPLITTING THE PART WHEN OVER THE CHUNK SIZE.
+
+      // We can't fit the part in the chunk.
+      // Add the chunk and start a new one.
+      const chunk = {
+        text: currentText.slice(chunkStart, chunkEnd),
+        start: chunkStart,
+        end: chunkEnd
+      }
+      addChunk(chunk)
+
+      // Handle the overlap by potentially resetting the start to earlier.
+      if (chunkOverlap > 0) {
+        const overlapParts = chunkParts.slice(-chunkOverlap)
+        if (overlapParts.length > 0) {
+          chunkStart = overlapParts[0].start
+          chunkParts = overlapParts
+        }
+      } else {
+        // Restart the chunk.
+        chunkStart = part.start
+        chunkParts = []
+      }
+
+      chunkParts.push(part)
+      chunkEnd = part.end
+    }
+  }
+
+  // Add the last chunk.
+  if (
+    chunkStart < currentText.length &&
+    (lastChunkEnd === null || lastChunkEnd < chunkEnd)
+  ) {
+    addChunk({
+      text: currentText.slice(chunkStart, chunkEnd),
+      start: chunkStart,
+      end: chunkEnd
+    })
+  }
+
+  return chunks
+}
+
+export function chunkByCharacterCurrent(
   currentText: string,
   chunkSize: number,
   splitter: (text: string) => string[],
